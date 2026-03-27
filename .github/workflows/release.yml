@@ -1,0 +1,44 @@
+name: Build and Release Plugin
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set plugin folder name
+        run: echo "PLUGIN_SLUG=truckstop-finder" >> $GITHUB_ENV
+
+      - name: Prepare build folder
+        run: |
+          mkdir build
+          rsync -av \
+            --exclude=".git" \
+            --exclude=".github" \
+            --exclude=".DS_Store" \
+            --exclude="node_modules" \
+            --exclude="*.zip" \
+            ./ build/${PLUGIN_SLUG}/
+
+      - name: Create zip
+        run: |
+          cd build
+          zip -r ../truckstop-finder.zip ${PLUGIN_SLUG}
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: truckstop-finder.zip
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
